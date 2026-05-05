@@ -1,67 +1,34 @@
-name: Wiki CI/CD
+name: Wiki CI
 
 on:
   push:
     branches:
       - main
-      - master
-    paths:
-      - 'wiki/**'
-  pull_request:
-    branches:
-      - main
-      - master
-    paths:
-      - 'wiki/**'
 
 permissions:
   contents: write
-
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Verify Wiki Folder
-        run: |
-          if [ ! -d "wiki" ]; then
-            echo "Error: wiki directory does not exist!"
-            exit 1
-          fi
-          echo "Wiki directory found."
-          ls -la wiki
+  wiki:
+    if: ${{ github.repository_owner == 'kaivian' }}
 
-  deploy:
-    needs: verify
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout base code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           path: base-code
-
-      - name: Checkout wiki repository
-        uses: actions/checkout@v4
+      - name: Checkout wiki code
+        uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}.wiki
+          repository: ${{github.repository}}.wiki
           path: wiki
-        continue-on-error: true
-
-      - name: Sync Wiki Files
-        if: steps.wiki-checkout.outcome == 'success' || true
+      - name: Push to wiki
         run: |
-          if [ ! -d "wiki/.git" ]; then
-            echo "Wiki repository not found or not initialized. Please create the first page on GitHub manually."
-            exit 1
-          fi
           cd wiki
-          # Remove only markdown files to prevent deleting _Sidebar.md or other hidden files
-          find . -maxdepth 1 -name "*.md" ! -name "_Sidebar.md" ! -name "_Footer.md" -exec rm {} + || true
-          cp ../base-code/wiki/*.md ./
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          rm *.md
+          cp ../base-code/wiki/* ./
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
           git add .
-          git diff-index --quiet HEAD || (git commit -m "docs: Sync wiki from repository" && git push)
+          git diff-index --quiet HEAD || (git commit -m "Add changes" && git push)
