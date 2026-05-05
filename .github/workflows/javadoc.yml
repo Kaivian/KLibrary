@@ -1,8 +1,13 @@
-name: Deploy Javadoc
+name: Javadoc CI/CD
 
 on:
   push:
     branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
       - master
 
 permissions:
@@ -11,29 +16,52 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Ensures full history for gh-pages
+        uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'maven'
 
-      - name: Build Javadoc
-        run: mvn javadoc:javadoc
+      - name: Build with Maven
+        run: mvn clean compile --batch-mode --fail-fast
 
-      - name: Deploy Javadoc to GitHub Pages
+      - name: Generate Javadoc
+        run: mvn javadoc:javadoc --batch-mode --fail-fast
+        
+      - name: Upload Javadoc Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: javadoc
+          path: target/site/apidocs/
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Javadoc Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: javadoc
+          path: target/site/apidocs
+
+      - name: Deploy Javadoc to gh-pages branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan gh-pages
-          git rm -rf .
-          mv target/site/apidocs/* .
+          git checkout --orphan gh-pages || git checkout gh-pages
+          git rm -rf . || true
+          cp -r target/site/apidocs/* .
           git add .
-          git commit -m "Update Javadoc"
-          git push --force origin gh-pages
+          git commit -m "docs: Auto-update Javadoc" || echo "No changes to commit"
+          git push origin gh-pages --force

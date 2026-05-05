@@ -12,7 +12,7 @@ A powerful, modern, and modular library for building Minecraft Paper plugins. KL
 
 ## Supported Platforms
 
-- **Paper API:** 1.20.6 / 1.21
+- **Paper API:** 26.1.2
 - **Java Version:** Java 21+
 
 ## Installation
