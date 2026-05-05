@@ -4,31 +4,50 @@ on:
   push:
     branches:
       - main
+      - master
 
 permissions:
   contents: write
+
 jobs:
   wiki:
-    if: ${{ github.repository_owner == 'kaivian' }}
-
+    # Removed the 'if: repository_owner' check so this actually runs on your fork/repo!
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout base code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: base-code
+
       - name: Checkout wiki code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{github.repository}}.wiki
           path: wiki
+        # This prevents the entire action from crashing if the wiki hasn't been initialized yet
+        continue-on-error: true
+
       - name: Push to wiki
+        if: steps.wiki-checkout.outcome == 'success' || true
         run: |
+          if [ ! -d "wiki/.git" ]; then
+            echo "ERROR: The Wiki repository does not exist yet."
+            echo "FIX: You must go to your GitHub repository -> Click the 'Wiki' tab -> Click 'Create the first page' and save it."
+            exit 1
+          fi
+          
           cd wiki
-          rm *.md
-          cp ../base-code/wiki/* ./
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          
+          # Safely remove old markdown files but keep hidden/special github wiki files
+          find . -maxdepth 1 -name "*.md" ! -name "_Sidebar.md" ! -name "_Footer.md" -exec rm {} + || true
+          
+          # Copy new files from our /wiki folder
+          cp ../base-code/wiki/*.md ./
+          
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add .
-          git diff-index --quiet HEAD || (git commit -m "Add changes" && git push)
+          
+          # Only push if there are actual changes
+          git diff-index --quiet HEAD || (git commit -m "docs: Sync wiki from repository" && git push)

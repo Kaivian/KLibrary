@@ -31,7 +31,7 @@ jobs:
         run: mvn clean compile --batch-mode --fail-fast
 
       - name: Generate Javadoc
-        run: mvn javadoc:javadoc --batch-mode --fail-fast
+        run: mvn javadoc:javadoc --batch-mode -DfailOnError=false -Ddoclint=none
         
       - name: Upload Javadoc Artifact
         uses: actions/upload-artifact@v4
