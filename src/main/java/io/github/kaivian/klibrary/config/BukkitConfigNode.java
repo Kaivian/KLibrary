@@ -129,6 +129,14 @@ public class BukkitConfigNode implements ConfigNode {
      * {@inheritDoc}
      */
     @Override
+    public List<Integer> getIntList(String key) {
+        return section.contains(key) ? section.getIntegerList(key) : Collections.emptyList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<String> getKeys() {
         return section.getKeys(false);
     }

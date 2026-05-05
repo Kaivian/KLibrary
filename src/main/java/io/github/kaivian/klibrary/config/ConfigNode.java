@@ -124,6 +124,14 @@ public interface ConfigNode {
     List<String> getStringList(String key);
 
     /**
+     * Retrieves a list of integer values at the given key.
+     *
+     * @param key the configuration key
+     * @return a list of integers, or an empty list if absent
+     */
+    List<Integer> getIntList(String key);
+
+    /**
      * Returns all top-level keys in this configuration node.
      *
      * @return a set of key names

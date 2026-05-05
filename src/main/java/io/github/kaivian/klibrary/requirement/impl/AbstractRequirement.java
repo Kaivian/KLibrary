@@ -6,9 +6,11 @@ import io.github.kaivian.klibrary.context.ExecutionContext;
 import io.github.kaivian.klibrary.requirement.api.Requirement;
 import io.github.kaivian.klibrary.requirement.api.RequirementResult;
 import io.github.kaivian.klibrary.service.ServiceProvider;
+import org.bukkit.entity.Player;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Abstract base class for requirement implementations.
@@ -121,5 +123,18 @@ public abstract class AbstractRequirement implements Requirement {
         }
 
         return result;
+    }
+
+    /**
+     * Extracts the player from the context, or returns empty if not present.
+     *
+     * <p>This is a convenience method for requirement implementations that
+     * require a player to evaluate their condition.</p>
+     *
+     * @param context the execution context
+     * @return an {@link Optional} containing the player, or empty if absent
+     */
+    protected Optional<Player> requirePlayer(ExecutionContext context) {
+        return context.getPlayer();
     }
 }

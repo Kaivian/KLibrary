@@ -153,6 +153,22 @@ public class JsonConfigNode implements ConfigNode {
      * {@inheritDoc}
      */
     @Override
+    public List<Integer> getIntList(String key) {
+        JsonElement el = json.get(key);
+        if (el == null || !el.isJsonArray()) {
+            return Collections.emptyList();
+        }
+        JsonArray array = el.getAsJsonArray();
+        return StreamSupport.stream(array.spliterator(), false)
+                .filter(JsonElement::isJsonPrimitive)
+                .map(JsonElement::getAsInt)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<String> getKeys() {
         return json.keySet();
     }

@@ -4,36 +4,77 @@ import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents a GUI screen holding the Bukkit Inventory instance.
+ * Represents a single instance of a GUI screen that is displayed to a player.
+ *
+ * <p>An {@code InventoryView} is the runtime representation of a menu. It wraps
+ * the underlying Bukkit {@link Inventory}, holds the {@link InventoryContext} for
+ * the session, and links back to the {@link InventoryProvider} that created it.</p>
+ *
+ * <p>Views are created by {@link InventoryProvider#createView(InventoryContext)} and
+ * managed by the {@link InventoryManager}'s per-player navigation stack. Each view
+ * has a unique ID (typically matching the provider's ID) used for stack lookups.</p>
+ *
+ * <h2>Lifecycle</h2>
+ * <ol>
+ *   <li>Created by the provider via {@link InventoryProvider#createView(InventoryContext)}</li>
+ *   <li>Pushed onto the player's stack by the {@link InventoryManager}</li>
+ *   <li>Initially rendered via {@link InventoryProvider#update(InventoryView)}</li>
+ *   <li>Optionally auto-refreshed by the global ticker if {@link InventoryProvider#isAutoRefresh()} is {@code true}</li>
+ *   <li>Removed from the stack when popped, replaced, or cleared</li>
+ * </ol>
+ *
+ * @see InventoryProvider
+ * @see InventoryManager
+ * @see InventoryContext
  */
 public interface InventoryView {
 
     /**
-     * Returns the unique ID of this inventory view (typically the menu ID from config).
-     * @return the inventory ID
+     * Returns the unique identifier of this view.
+     *
+     * <p>This typically matches the ID of the {@link InventoryProvider} that created it
+     * (e.g., {@code "main_menu"}, {@code "shop"}).</p>
+     *
+     * @return the view ID; never {@code null}
      */
     @NotNull String getId();
 
     /**
-     * Returns the Bukkit inventory associated with this view.
-     * @return the Bukkit inventory
+     * Returns the underlying Bukkit {@link Inventory} instance associated with this view.
+     *
+     * <p>This is the actual inventory displayed to the player. Modifying its contents
+     * directly will be reflected in the player's GUI.</p>
+     *
+     * @return the Bukkit inventory; never {@code null}
      */
     @NotNull Inventory getInventory();
 
     /**
-     * Returns the context of this inventory view.
-     * @return the inventory context
+     * Returns the context associated with this view.
+     *
+     * <p>The context holds player information, placeholders, metadata, and pagination
+     * state for this inventory session.</p>
+     *
+     * @return the inventory context; never {@code null}
      */
     @NotNull InventoryContext getContext();
 
     /**
      * Returns the provider that created and manages this view.
-     * @return the inventory provider
+     *
+     * <p>The provider defines how the view's contents are rendered and how
+     * click events are handled.</p>
+     *
+     * @return the inventory provider; never {@code null}
      */
     @NotNull InventoryProvider getProvider();
 
     /**
-     * Refreshes the inventory view.
+     * Refreshes this view by delegating to its provider's
+     * {@link InventoryProvider#update(InventoryView)} method.
+     *
+     * <p>This can be called manually to force a content update outside of
+     * the automatic refresh cycle.</p>
      */
     void refresh();
 }

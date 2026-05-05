@@ -21,33 +21,70 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Implementation of the InventoryManager with stack-based navigation and global ticking.
+ * Production implementation of {@link InventoryManager} with stack-based navigation,
+ * a global auto-refresh ticker, and Bukkit event routing.
+ *
+ * <p>This class serves as the central coordinator for all GUI inventory operations
+ * in KLibrary. It manages:</p>
+ * <ul>
+ *   <li><b>Provider registry</b> — A thread-safe map of registered {@link InventoryProvider}s</li>
+ *   <li><b>Per-player view stacks</b> — {@link Deque}-based navigation stacks for each player</li>
+ *   <li><b>Active view index</b> — A fast {@link Inventory} → {@link InventoryView} lookup
+ *       for efficient event routing</li>
+ *   <li><b>Global ticker</b> — A repeating task (every 20 ticks / 1 second) that calls
+ *       {@link InventoryProvider#update(InventoryView)} on all auto-refresh views</li>
+ * </ul>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>All internal maps use {@link ConcurrentHashMap} to support concurrent reads from
+ * the ticker thread and writes from event handlers (main thread). However, individual
+ * stack operations ({@link #push}, {@link #pop}, {@link #replace}) should only be called
+ * from the main server thread.</p>
+ *
+ * <h2>Event Handling</h2>
+ * <p>This class implements {@link Listener} and automatically registers itself for:</p>
+ * <ul>
+ *   <li>{@link InventoryClickEvent} — Routes clicks to the active provider</li>
+ *   <li>{@link InventoryOpenEvent} — Notifies the provider of open events</li>
+ *   <li>{@link InventoryCloseEvent} — Handles stack cleanup with a 1-tick delay</li>
+ *   <li>{@link PlayerQuitEvent} — Clears all state for disconnecting players</li>
+ * </ul>
+ *
+ * @see InventoryManager
+ * @see InventoryProvider
+ * @see InventoryView
  */
 public class InventoryManagerImpl implements InventoryManager, Listener {
 
     private final KLibrary plugin;
     private final Map<String, InventoryProvider> providers = new ConcurrentHashMap<>();
     
-    // Stack of views per player
+    /** Per-player navigation stacks. The top of the deque is the currently displayed view. */
     private final Map<UUID, Deque<InventoryView>> playerStacks = new ConcurrentHashMap<>();
     
-    // Fast lookup for currently open inventory views to route events
+    /** Fast lookup: maps Bukkit inventories to their KLibrary view wrappers for event routing. */
     private final Map<Inventory, InventoryView> activeViews = new ConcurrentHashMap<>();
     
     private final BukkitTask updateTask;
 
+    /**
+     * Constructs the inventory manager, registers event listeners, and starts the
+     * global auto-refresh ticker.
+     *
+     * @param plugin the KLibrary plugin instance; used for event registration and scheduling
+     */
     public InventoryManagerImpl(KLibrary plugin) {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
 
-        // Global ticker for auto-refreshing GUI elements
+        // Global ticker for auto-refreshing GUI elements (every 20 ticks = 1 second)
         this.updateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (InventoryView view : activeViews.values()) {
                 if (view.getProvider().isAutoRefresh()) {
                     view.getProvider().update(view);
                 }
             }
-        }, 20L, 20L); // Update every second (20 ticks) - could be configurable
+        }, 20L, 20L);
     }
 
     @Override
@@ -202,12 +239,15 @@ public class InventoryManagerImpl implements InventoryManager, Listener {
             view.getProvider().onClose(event, view.getContext());
             
             Player player = (Player) event.getPlayer();
-            Deque<InventoryView> stack = playerStacks.get(player.getUniqueId());
             
             // If the player closed it manually (not via push/replace), we need to clear stack
             // We use a slight delay to see if a new inventory opens immediately
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                InventoryView currentView = activeViews.get(player.getOpenInventory().getTopInventory());
+                if (!player.isOnline()) return;
+                
+                // Use fully-qualified Bukkit InventoryView to avoid name clash
+                org.bukkit.inventory.InventoryView bukkitView = player.getOpenInventory();
+                InventoryView currentView = activeViews.get(bukkitView.getTopInventory());
                 if (currentView == null) {
                     // Player fully closed their inventory
                     clear(player);
