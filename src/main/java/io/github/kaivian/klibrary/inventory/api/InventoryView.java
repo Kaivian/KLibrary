@@ -77,4 +77,24 @@ public interface InventoryView {
      * the automatic refresh cycle.</p>
      */
     void refresh();
+
+    /**
+     * Sets a view-specific button at the given slot.
+     *
+     * <p>Buttons set on the view level take precedence over buttons
+     * defined in the provider's configuration. This allows for dynamic
+     * injection of buttons like pagination or close buttons.</p>
+     *
+     * @param slot   the inventory slot index (0-based)
+     * @param button the button to set; must not be {@code null}
+     */
+    void setButton(int slot, @NotNull io.github.kaivian.klibrary.inventory.button.Button button);
+
+    /**
+     * Retrieves a view-specific button at the given slot, if any.
+     *
+     * @param slot the inventory slot index (0-based)
+     * @return the button at the slot, or {@code null} if none is set on the view
+     */
+    @org.jetbrains.annotations.Nullable io.github.kaivian.klibrary.inventory.button.Button getButton(int slot);
 }

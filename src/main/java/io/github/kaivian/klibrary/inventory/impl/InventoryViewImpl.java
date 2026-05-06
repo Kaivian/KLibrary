@@ -3,8 +3,13 @@ package io.github.kaivian.klibrary.inventory.impl;
 import io.github.kaivian.klibrary.inventory.api.InventoryContext;
 import io.github.kaivian.klibrary.inventory.api.InventoryProvider;
 import io.github.kaivian.klibrary.inventory.api.InventoryView;
+import io.github.kaivian.klibrary.inventory.button.Button;
 import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Default implementation of {@link InventoryView} that holds references to the
@@ -31,6 +36,7 @@ public class InventoryViewImpl implements InventoryView {
     private final Inventory inventory;
     private final InventoryContext context;
     private final InventoryProvider provider;
+    private final Map<Integer, Button> viewButtons = new ConcurrentHashMap<>();
 
     /**
      * Constructs a new {@code InventoryViewImpl}.
@@ -79,5 +85,15 @@ public class InventoryViewImpl implements InventoryView {
     @Override
     public void refresh() {
         provider.update(this);
+    }
+
+    @Override
+    public void setButton(int slot, @NotNull Button button) {
+        viewButtons.put(slot, button);
+    }
+
+    @Override
+    public @Nullable Button getButton(int slot) {
+        return viewButtons.get(slot);
     }
 }

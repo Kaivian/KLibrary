@@ -138,7 +138,12 @@ public class ConfigurableInventoryProvider implements InventoryProvider {
         InventoryContext context = view.getContext();
         
         for (int i = 0; i < size; i++) {
-            Button button = buttons.get(i);
+            // View-level button takes priority
+            Button button = view.getButton(i);
+            if (button == null) {
+                button = buttons.get(i);
+            }
+            
             if (button != null && button.isVisible(context)) {
                 inventory.setItem(i, button.getItem(context));
             } else {
@@ -162,6 +167,7 @@ public class ConfigurableInventoryProvider implements InventoryProvider {
         }
 
         int slot = event.getSlot();
+        
         Button button = buttons.get(slot);
         if (button != null && button.isVisible(context)) {
             button.onClick(event, context);

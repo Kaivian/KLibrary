@@ -120,15 +120,9 @@ public class InventoryManagerImpl implements InventoryManager, Listener {
     }
 
     @Override
-    public void replace(@NotNull Player player, @NotNull String providerId, @NotNull InventoryContext context) {
+    public void openReplace(@NotNull Player player, @NotNull String providerId, @NotNull InventoryContext context) {
         providers.computeIfPresent(providerId, (id, provider) -> {
             Deque<InventoryView> stack = playerStacks.computeIfAbsent(player.getUniqueId(), k -> new ArrayDeque<>());
-            
-            // Remove current if exists without closing
-            if (!stack.isEmpty()) {
-                InventoryView current = stack.pop();
-                activeViews.remove(current.getInventory());
-            }
             
             InventoryView newView = provider.createView(context);
             stack.push(newView);
@@ -136,6 +130,20 @@ public class InventoryManagerImpl implements InventoryManager, Listener {
             return provider;
         });
     }
+
+    @Override
+    public void update(@NotNull Player player, @NotNull InventoryContext context) {
+        Deque<InventoryView> stack = playerStacks.get(player.getUniqueId());
+        if (stack != null && !stack.isEmpty()) {
+            InventoryView current = stack.pop();
+            activeViews.remove(current.getInventory());
+            
+            InventoryView newView = current.getProvider().createView(context);
+            stack.push(newView);
+            openView(player, newView);
+        }
+    }
+
 
     @Override
     public void clear(@NotNull Player player) {
@@ -208,6 +216,11 @@ public class InventoryManagerImpl implements InventoryManager, Listener {
         return stack != null ? stack.size() : 0;
     }
 
+    @Override
+    public boolean hasPrevious(@NotNull Player player) {
+        return getStackSize(player) > 1;
+    }
+
     // --- Event Handling ---
 
     @EventHandler
@@ -216,6 +229,15 @@ public class InventoryManagerImpl implements InventoryManager, Listener {
         if (view != null) {
             // Default cancel
             event.setCancelled(true);
+            
+            // Prioritize view-level buttons over provider logic
+            if (event.getClickedInventory() != null && event.getClickedInventory().equals(view.getInventory())) {
+                io.github.kaivian.klibrary.inventory.button.Button viewButton = view.getButton(event.getSlot());
+                if (viewButton != null && viewButton.isVisible(view.getContext())) {
+                    viewButton.onClick(event, view.getContext());
+                    return; // View button handled the click, don't pass to provider
+                }
+            }
             
             // Only process top inventory clicks for buttons, or allow custom handling
             view.getProvider().onClick(event, view.getContext());

@@ -1,0 +1,25 @@
+core:
+  prefix: "[Plugin]"
+
+gui:
+  button:
+    close:
+      name: "<red>Close"
+    back:
+      name: "<yellow>Go Back"
+      lore:
+        - "<gray>To %page%"
+    back_or_close:
+      name_back: "<yellow>Go Back"
+      name_close: "<red>Close"
+      lore:
+        - "<gray>To %page%"
+    navigation:
+      next:
+        name: "<green>Next Page"
+        lore:
+          - "<gray>To page %page%"
+      previous:
+        name: "<green>Previous Page"
+        lore:
+          - "<gray>To page %page%"

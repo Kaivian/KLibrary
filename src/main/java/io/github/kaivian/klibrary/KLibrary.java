@@ -9,6 +9,8 @@ import io.github.kaivian.klibrary.requirement.impl.SimpleRequirementRegistry;
 import io.github.kaivian.klibrary.requirement.impl.config.RequirementConfigDeserializer;
 import io.github.kaivian.klibrary.requirement.impl.requirements.*;
 import io.github.kaivian.klibrary.service.ServiceProvider;
+import io.github.kaivian.klibrary.lang.LanguageManager;
+import io.github.kaivian.klibrary.lang.LanguageManagerImpl;
 import io.github.kaivian.klibrary.inventory.api.InventoryManager;
 import io.github.kaivian.klibrary.inventory.impl.InventoryManagerImpl;
 import io.github.kaivian.klibrary.inventory.impl.config.InventoryConfigDeserializer;
@@ -56,6 +58,10 @@ public final class KLibrary extends JavaPlugin {
 
         // Initialize service layer
         serviceProvider = new ServiceProvider(this);
+
+        // Initialize language manager
+        LanguageManager languageManager = new LanguageManagerImpl(this);
+        serviceProvider.setLanguageManager(languageManager);
 
         // Initialize registries
         actionRegistry = new SimpleActionRegistry();
@@ -107,6 +113,7 @@ public final class KLibrary extends JavaPlugin {
      * Reloads configuration and menus.
      */
     public void reload() {
+        serviceProvider.getLanguageManager().ifPresent(LanguageManager::reload);
         serviceProvider.getInventoryManager().ifPresent(manager -> {
             manager.shutdown(); // Close open inventories
             manager.clearProviders();

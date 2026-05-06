@@ -1,121 +1,28 @@
-# Inventory System
+# Inventory System Documentation
 
-KLibrary replaces raw Bukkit inventory handling with a modern, modular, and dynamic stack-based GUI framework.
+The KLibrary Inventory System replaces traditional, event-heavy Bukkit inventory handling with a modern, modular, and state-driven GUI framework designed exclusively for Paper servers. 
 
-## Creating a Basic GUI
+To ensure complete clarity and a professional developer experience, the documentation for this system is split into multiple focused topics. Please read them in order to understand the full capabilities of the API.
 
-A GUI is represented by an `InventoryProvider` and registered with the `InventoryManager`.
+## Table of Contents
 
-```java
-import io.github.kaivian.klibrary.inventory.api.InventoryProvider;
-import io.github.kaivian.klibrary.inventory.api.InventoryView;
-import io.github.kaivian.klibrary.inventory.api.InventoryContext;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
+### 1. [Getting Started: Creating and Opening a GUI](./07-1-inventory-getting-started)
+Learn the core architectural rules (Context vs Provider vs View) and how to construct, register, and display your first GUI to a player.
 
-public class MyProvider implements InventoryProvider {
-    @Override
-    public @NotNull String getId() {
-        return "my_menu";
-    }
+### 2. [Default Buttons Setup System](./07-2-inventory-default-buttons)
+Understand the prioritized rendering hierarchy (View vs Provider levels) and how to safely inject built-in UI controls like `BackButton` and `CloseButton`.
 
-    @Override
-    public @NotNull InventoryView createView(@NotNull InventoryContext context) {
-        return InventoryView.builder()
-                .title("<gradient:blue:aqua>My Awesome Menu</gradient>")
-                .size(27) // 3 rows
-                .build();
-    }
-    
-    @Override
-    public void update(@NotNull InventoryView view) {
-        // Optional: Update inventory items here
-    }
-}
-```
+### 3. [Pagination System (Next / Previous Page GUI)](./07-3-inventory-pagination)
+Discover how to build scrolling item lists without recreating inventories using KLibrary's state-driven context engine and built-in `NavigationButton` implementations.
 
-To open this GUI for a player, you must register the provider and push it to the player's view stack:
-```java
-import io.github.kaivian.klibrary.KLibrary;
-import io.github.kaivian.klibrary.inventory.api.InventoryManager;
-import io.github.kaivian.klibrary.inventory.api.InventoryContext;
+### 4. [Updating GUI Dynamically (Live Refresh System)](./07-4-inventory-dynamic-updates)
+Learn the distinct differences between a state update (`update()`) and a view transition (`openReplace()`), and how to hook into the global auto-refresh ticker.
 
-// Get the InventoryManager instance
-InventoryManager manager = KLibrary.getInstance().getServiceProvider()
-        .getInventoryManager().orElseThrow();
+### 5. [GUI Click Handling System](./07-5-inventory-click-handling)
+Explore the execution flow of a player interaction. Learn how the framework intercepts, secures, and routes clicks directly to stateless `Button` dispatchers.
 
-// Register the provider (usually done once on startup)
-manager.registerProvider(new MyProvider());
+### 6. [GUI Animation System (Transitions & Effects)](./07-6-inventory-animation)
+Find out how to simulate smooth visual transitions—like slot-by-slot reveals and loading screens—using timed update cycles rather than disrupting the client UI.
 
-// Create a context and open the menu for the player
-InventoryContext context = InventoryContext.builder()
-        .player(player)
-        .build();
-
-manager.push(player, "my_menu", context);
-```
-
-## The Button System
-
-Rather than handling raw `InventoryClickEvent`s, KLibrary provides a highly abstracted `Button` concept. Buttons are essentially `ItemStack`s combined with interaction logic. The `BaseButton` class is the standard implementation.
-
-```java
-import io.github.kaivian.klibrary.inventory.button.BaseButton;
-import io.github.kaivian.klibrary.inventory.api.Button;
-import io.github.kaivian.klibrary.action.api.ActionResult;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
-import java.util.List;
-
-// Inside your provider's update method:
-public void update(InventoryView view) {
-    ItemStack item = new ItemStack(Material.DIAMOND);
-    
-    Button diamondButton = BaseButton.builder()
-            .template(item)
-            .anyClick(List.of(ctx -> {
-                ctx.getPlayer().ifPresent(p -> p.sendMessage("You clicked the diamond!"));
-                return ActionResult.success();
-            }))
-            .build();
-
-    view.setButton(4, diamondButton); // Center slot
-}
-```
-
-## Navigation Stack (Back System)
-
-KLibrary stores the hierarchy of opened menus using a stack-based navigation model. You can dynamically go "back" to the previous menu by popping the current view.
-
-```java
-// Inside an update method, creating a back button:
-Button backButton = BaseButton.builder()
-    .template(new ItemStack(Material.BARRIER)) // Or your custom back icon
-    .anyClick(List.of(ctx -> {
-        // Access the InventoryManager and pop the current view to go back
-        KLibrary.getInstance().getServiceProvider().getInventoryManager().ifPresent(manager -> {
-            ctx.getPlayer().ifPresent(manager::pop);
-        });
-        return ActionResult.success();
-    }))
-    .build();
-
-view.setButton(26, backButton); // Bottom right slot
-```
-
-## Dynamic Updates
-
-To update an inventory continuously (e.g., creating animations or updating values), override the `isAutoRefresh()` and `update()` methods inside your provider:
-
-```java
-@Override
-public boolean isAutoRefresh() {
-    return true; // Enables automatic refreshing by the global ticker
-}
-
-@Override
-public void update(@NotNull InventoryView view) {
-    // This runs automatically based on the InventoryManager's tick rate.
-    // Modify the view's current items or buttons here.
-}
-```
+### 7. [Advanced GUI Update Patterns](./07-7-inventory-advanced-patterns)
+Master optimization strategies. Learn how to perform targeted slot updates, avoid full rebuilds, and throttle events to keep your menus highly performant on large servers.

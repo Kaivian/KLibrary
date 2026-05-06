@@ -74,16 +74,24 @@ public interface InventoryManager {
     void pop(@NotNull Player player);
 
     /**
-     * Replaces the current inventory view with a new one without growing the stack.
-     *
-     * <p>This is useful for transitioning between views at the same navigation level
-     * (e.g., switching between tabs). If the stack is empty, the new view is pushed.</p>
+     * Replaces the current inventory view with a new one.
+     * 
+     * <p>This method replaces the current GUI visually but still pushes it into the stack.</p>
      *
      * @param player     the player whose current view should be replaced; must not be {@code null}
      * @param providerId the ID of the registered inventory provider; must not be {@code null}
      * @param context    the context for the new inventory session; must not be {@code null}
      */
-    void replace(@NotNull Player player, @NotNull String providerId, @NotNull InventoryContext context);
+    void openReplace(@NotNull Player player, @NotNull String providerId, @NotNull InventoryContext context);
+
+    /**
+     * Updates the current inventory view with a new context without changing the stack depth.
+     * This is useful for pagination.
+     *
+     * @param player  the player whose current view should be updated; must not be {@code null}
+     * @param context the new context for this inventory session; must not be {@code null}
+     */
+    void update(@NotNull Player player, @NotNull InventoryContext context);
 
     /**
      * Clears the player's entire inventory stack and closes any open inventory.
@@ -157,4 +165,12 @@ public interface InventoryManager {
      * @return the number of views in the player's stack (0 if none)
      */
     int getStackSize(@NotNull Player player);
+
+    /**
+     * Checks if the player has a previous view in their navigation stack.
+     *
+     * @param player the player to query; must not be {@code null}
+     * @return {@code true} if there is a previous view (stack size > 1)
+     */
+    boolean hasPrevious(@NotNull Player player);
 }

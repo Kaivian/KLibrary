@@ -39,6 +39,7 @@ public class ServiceProvider {
     private final PermissionService permissionService;
     private final SoundService soundService;
     private io.github.kaivian.klibrary.inventory.api.InventoryManager inventoryManager;
+    private io.github.kaivian.klibrary.lang.LanguageManager languageManager;
 
     /**
      * Constructs a new {@code ServiceProvider} and initializes all services.
@@ -123,5 +124,21 @@ public class ServiceProvider {
      */
     public void setInventoryManager(io.github.kaivian.klibrary.inventory.api.InventoryManager inventoryManager) {
         this.inventoryManager = inventoryManager;
+    }
+
+    /**
+     * Returns the language manager.
+     *
+     * @return an {@link java.util.Optional} containing the language manager, if initialized
+     */
+    public java.util.Optional<io.github.kaivian.klibrary.lang.LanguageManager> getLanguageManager() {
+        return java.util.Optional.ofNullable(languageManager);
+    }
+
+    /**
+     * Sets the language manager.
+     */
+    public void setLanguageManager(io.github.kaivian.klibrary.lang.LanguageManager languageManager) {
+        this.languageManager = languageManager;
     }
 }

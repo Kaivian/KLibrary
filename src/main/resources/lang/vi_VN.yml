@@ -1,0 +1,25 @@
+core:
+  prefix: "[Plugin]"
+
+gui:
+  button:
+    close:
+      name: "<red>Đóng"
+    back:
+      name: "<yellow>Quay Lại"
+      lore:
+        - "<gray>Tới %page%"
+    back_or_close:
+      name_back: "<yellow>Quay Lại"
+      name_close: "<red>Đóng"
+      lore:
+        - "<gray>Tới %page%"
+    navigation:
+      next:
+        name: "<green>Trang Tiếp Theo"
+        lore:
+          - "<gray>Tới trang %page%"
+      previous:
+        name: "<green>Trang Trước"
+        lore:
+          - "<gray>Tới trang %page%"
