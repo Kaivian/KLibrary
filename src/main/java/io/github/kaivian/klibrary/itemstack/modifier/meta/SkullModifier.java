@@ -62,7 +62,7 @@ public class SkullModifier implements ItemModifier {
         if (owner != null) {
             skullMeta.setOwningPlayer(owner);
         } else if (base64Texture != null) {
-            PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID());
+            PlayerProfile profile = Bukkit.createProfile(UUID.nameUUIDFromBytes(base64Texture.getBytes(java.nio.charset.StandardCharsets.UTF_8)), "CustomHead");
             profile.setProperty(new ProfileProperty("textures", base64Texture));
             skullMeta.setPlayerProfile(profile);
         }
