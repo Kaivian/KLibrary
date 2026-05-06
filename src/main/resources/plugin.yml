@@ -4,7 +4,7 @@ prefix: KLibrary
 version: '${version}'
 
 main: io.github.kaivian.klibrary.KLibrary
-api-version: '26.1.2'
+api-version: '1.21.4'
 load: POSTWORLD
 
 authors: [ Kaivian ]
