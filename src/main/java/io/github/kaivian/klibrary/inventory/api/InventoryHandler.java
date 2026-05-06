@@ -2,6 +2,7 @@ package io.github.kaivian.klibrary.inventory.api;
 
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 
 /**
@@ -66,4 +67,16 @@ public interface InventoryHandler {
      * @param context the inventory context for this session
      */
     default void onClose(InventoryCloseEvent event, InventoryContext context) {}
+
+    /**
+     * Called when a player drags items across the managed inventory.
+     *
+     * <p>
+     * Implementations should handle or cancel drag events similarly to clicks.
+     * </p>
+     *
+     * @param event   the Bukkit drag event
+     * @param context the inventory context for this session
+     */
+    default void onDrag(InventoryDragEvent event, InventoryContext context) {}
 }
