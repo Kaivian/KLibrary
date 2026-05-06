@@ -1,9 +1,5 @@
 package io.github.kaivian.klibrary.service;
 
-import net.luckperms.api.LuckPerms;
-import net.luckperms.api.LuckPermsProvider;
-import net.luckperms.api.model.user.User;
-import net.luckperms.api.node.Node;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -30,6 +26,9 @@ import java.util.logging.Logger;
  * <p>The active provider is determined lazily on first use and cached for
  * subsequent operations. All methods are fail-safe and will log warnings
  * instead of throwing exceptions when providers are unavailable.</p>
+ *
+ * <p>LuckPerms API classes are loaded in isolation via a separate inner class
+ * to prevent {@link NoClassDefFoundError} when LuckPerms is not installed.</p>
  *
  * <p><b>Example:</b></p>
  * <pre>{@code
@@ -58,7 +57,6 @@ public class PermissionService {
     private final Plugin plugin;
 
     private Provider activeProvider;
-    private LuckPerms luckPerms;
     private Permission vaultPermission;
     private final Map<UUID, PermissionAttachment> bukkitAttachments = new ConcurrentHashMap<>();
     private boolean initialized = false;
@@ -84,7 +82,7 @@ public class PermissionService {
         // Priority 1: LuckPerms
         if (dependencyService.hasLuckPerms()) {
             try {
-                luckPerms = LuckPermsProvider.get();
+                LuckPermsHelper.init();
                 activeProvider = Provider.LUCKPERMS;
                 LOGGER.info("Permission service using LuckPerms provider.");
                 return;
@@ -136,13 +134,7 @@ public class PermissionService {
 
         try {
             return switch (activeProvider) {
-                case LUCKPERMS -> {
-                    User user = luckPerms.getUserManager().getUser(player.getUniqueId());
-                    yield user != null && user.getCachedData()
-                            .getPermissionData()
-                            .checkPermission(permission)
-                            .asBoolean();
-                }
+                case LUCKPERMS -> LuckPermsHelper.hasPermission(player, permission);
                 case VAULT -> vaultPermission.playerHas(player, permission);
                 case BUKKIT -> player.hasPermission(permission);
             };
@@ -165,13 +157,7 @@ public class PermissionService {
 
         try {
             return switch (activeProvider) {
-                case LUCKPERMS -> {
-                    User user = luckPerms.getUserManager().getUser(player.getUniqueId());
-                    if (user == null) yield false;
-                    user.data().add(Node.builder(permission).build());
-                    luckPerms.getUserManager().saveUser(user);
-                    yield true;
-                }
+                case LUCKPERMS -> LuckPermsHelper.addPermission(player, permission);
                 case VAULT -> {
                     vaultPermission.playerAdd(player, permission);
                     yield true;
@@ -201,13 +187,7 @@ public class PermissionService {
 
         try {
             return switch (activeProvider) {
-                case LUCKPERMS -> {
-                    User user = luckPerms.getUserManager().getUser(player.getUniqueId());
-                    if (user == null) yield false;
-                    user.data().remove(Node.builder(permission).build());
-                    luckPerms.getUserManager().saveUser(user);
-                    yield true;
-                }
+                case LUCKPERMS -> LuckPermsHelper.removePermission(player, permission);
                 case VAULT -> {
                     vaultPermission.playerRemove(player, permission);
                     yield true;
@@ -253,6 +233,62 @@ public class PermissionService {
             } catch (Exception ignored) {
                 // Player may already be disconnected
             }
+        }
+    }
+
+    /**
+     * Isolated helper class for LuckPerms API operations.
+     *
+     * <p>This class is only loaded by the JVM when its methods are first
+     * invoked, ensuring that LuckPerms classes are never resolved unless
+     * LuckPerms is actually present on the server. This prevents
+     * {@link NoClassDefFoundError} in environments without LuckPerms.</p>
+     */
+    private static final class LuckPermsHelper {
+
+        private static net.luckperms.api.LuckPerms luckPerms;
+
+        /**
+         * Initializes the LuckPerms API handle.
+         */
+        static void init() {
+            luckPerms = net.luckperms.api.LuckPermsProvider.get();
+        }
+
+        /**
+         * Checks a permission via LuckPerms cached data.
+         */
+        static boolean hasPermission(Player player, String permission) {
+            net.luckperms.api.model.user.User user =
+                    luckPerms.getUserManager().getUser(player.getUniqueId());
+            return user != null && user.getCachedData()
+                    .getPermissionData()
+                    .checkPermission(permission)
+                    .asBoolean();
+        }
+
+        /**
+         * Adds a permission node via LuckPerms.
+         */
+        static boolean addPermission(Player player, String permission) {
+            net.luckperms.api.model.user.User user =
+                    luckPerms.getUserManager().getUser(player.getUniqueId());
+            if (user == null) return false;
+            user.data().add(net.luckperms.api.node.Node.builder(permission).build());
+            luckPerms.getUserManager().saveUser(user);
+            return true;
+        }
+
+        /**
+         * Removes a permission node via LuckPerms.
+         */
+        static boolean removePermission(Player player, String permission) {
+            net.luckperms.api.model.user.User user =
+                    luckPerms.getUserManager().getUser(player.getUniqueId());
+            if (user == null) return false;
+            user.data().remove(net.luckperms.api.node.Node.builder(permission).build());
+            luckPerms.getUserManager().saveUser(user);
+            return true;
         }
     }
 }
